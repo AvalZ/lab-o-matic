@@ -23,8 +23,6 @@ CURL=`which curl`
 MYSQL=`which mysql`
 PHP=`which php`
 
-APACHE_RESTART=`apachectl restart`
-
 WP_VERSION="4.2.2"
 WP_VERSION_CHECK_URL="http://api.wordpress.org/core/version-check/1.0/?version=$WP_VERSION"
 WP_LATEST="https://wordpress.org/latest.zip"
@@ -63,15 +61,26 @@ create_wordpress_configurations(){
   $WP_CLI core config --path=$ECOMMERCE_ROOT --dbname=ecommerce --dbuser=ecommerce_user --dbpass=ecommerce_password
 }
 create_mysql_users(){
-  $MYSQL -u root < create_users.sql
+  $MYSQL -u root -p < create_users.sql
 }
 
 install_wordpress_sites(){
-  $WP_CLI core install --path=$BLOG_ROOT      --url=http://localhost/sbw/blog       --title="Stand by WordPress lab blog"       --admin_user=admin --admin_password=admin_pwd --admin_email=admin@localhost
-  $WP_CLI core install --path=$PORTFOLIO_ROOT --url=http://localhost/sbw/portfolio  --title="Stand by WordPress lab portfolio"  --admin_user=admin --admin_password=admin_pwd --admin_email=admin@localhost
-  $WP_CLI core install --path=$ECOMMERCE_ROOT --url=http://localhost/sbw/ecommerce  --title="Stand by WordPress lab ecommerce"  --admin_user=admin --admin_password=admin_pwd --admin_email=admin@localhost
+  $WP_CLI core install --path=$BLOG_ROOT      --url=http://localhost:8000 --title="Stand by WordPress lab blog"       --admin_user=admin --admin_password=admin_pwd --admin_email=admin@localhost.it
+  $WP_CLI core install --path=$PORTFOLIO_ROOT --url=http://localhost:8001 --title="Stand by WordPress lab portfolio"  --admin_user=admin --admin_password=admin_pwd --admin_email=admin@localhost.it
+  $WP_CLI core install --path=$ECOMMERCE_ROOT --url=http://localhost:8002 --title="Stand by WordPress lab ecommerce"  --admin_user=admin --admin_password=admin_pwd --admin_email=admin@localhost.it
+
+	cp router.php $BLOT_ROOT/router.php
+	cp router.php $PORTFOLIO_ROOT/router.php
+	cp router.php $ECOMMERCE_ROOT/router.php
+	
+
 }
 
+start_wordpress_sites(){
+	php -S localhost:8000 -t $BLOG_ROOT $BLOG_ROOT/router.php &
+	php -S localhost:8001 -t $PORTFOLIO_ROOT $PORTFOLIO_ROOT/router.php &
+	php -S localhost:8002 -t $ECOMMERCE_ROOT $ECOMMERCE_ROOT/router.php &
+}
 args=`getopt vh: $*`
 if [ $? != 0 ]
 then
@@ -112,14 +121,13 @@ else
   echo "[*] Installed $WP_CLI"
 fi
 echo "[*] Downloading WordPress core"
-#download_wordpress_core
+download_wordpress_core
 echo "[*] Cloning WordPress core into target dirs"
-#clone_wordpress_core
+clone_wordpress_core
 echo "[*] Creating MySQL users"
 create_mysql_users
 echo "[*] Installing WordPress sites into database"
 create_wordpress_configurations
 install_wordpress_sites
-
-
-
+echo "[*] Starting Wordpress sites"
+start_wordpress_sites
